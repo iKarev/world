@@ -1,5 +1,17 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div class="vuetify">
+    <Vuetify />
   </div>
 </template>
+
+<script lang="ts">
+import { Component, Vue } from "vue-property-decorator";
+import Vuetify from "@/components/Vuetify.vue"; // @ is an alias to /src
+
+@Component({
+  components: {
+    Vuetify
+  }
+})
+export default class About extends Vue {}
+</script>
