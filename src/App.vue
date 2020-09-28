@@ -20,6 +20,9 @@
           <router-link to="/about">
             <v-btn text>ABOUT</v-btn>
           </router-link>
+          <router-link to="/charts">
+            <v-btn text>CHARTS</v-btn>
+          </router-link>
         </div>
       </div>
       <v-spacer></v-spacer>
@@ -33,16 +36,16 @@
       </v-btn>
     </v-app-bar>
     <v-main>
-      <v-container class="home">
-        <v-layout row>
-          <v-flex xs1>
-            <InfoPanel />
-          </v-flex>
-          <v-flex xs11>
+      <v-layout row class="home">
+        <v-flex xs2>
+          <InfoPanel />
+        </v-flex>
+        <v-flex xs10>
+          <v-container>
             <router-view />
-          </v-flex>
-        </v-layout>
-      </v-container>
+          </v-container>
+        </v-flex>
+      </v-layout>
     </v-main>
   </v-app>
 </template>
@@ -58,3 +61,8 @@ export default Vue.extend({
   }
 });
 </script>
+
+<style lang="sass" scoped>
+.home
+  height: 100%
+</style>

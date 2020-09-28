@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.161",
+    "axios": "^0.20.0",
     "core-js": "^3.6.5",
+    "d3": "^6.2.0",
     "lodash": "^4.17.20",
+    "moment": "^2.29.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-property-decorator": "^8.4.2",

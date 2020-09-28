@@ -4,9 +4,8 @@
     :color="color"
     :expand-on-hover="expandOnHover"
     :mini-variant="miniVariant"
-    :permanent="true"
     :src="bg"
-    absolute
+    permanent
     dark
   >
     <v-list dense nav class="py-0" v-if="activeTile">
@@ -43,13 +42,6 @@
 
 <script lang="ts">
 import Vue from "vue";
-import { Tile, Line, Nation } from "@/interfaces/Map";
-import {
-  setRelativeTiles,
-  setMigrationResult,
-  resetLines
-} from "@/components/Map/helpers/migration";
-import getRandomNation from "@/components/Map/helpers/getRandomNation";
 
 export default Vue.extend({
   name: "InfoPanel",
