@@ -1,127 +1,89 @@
 <template>
   <div>
-    <svg class="arr"></svg>
+    <v-layout>
+      <v-flex xs4>
+        <form action="#" @submit.prevent="getIssues">
+          <v-text-field
+            label="owner/repo Name"
+            v-model="repository"
+          ></v-text-field>
+        </form>
+      </v-flex>
+    </v-layout>
+    <div class="alert alert-danger" v-show="errored">An error occured</div>
+    <world-bar-chart-svg :issues="issues" />
   </div>
 </template>
 
 <script>
-import * as d3 from "d3";
-import _ from "lodash";
+import * as moment from "moment";
+import * as axios from "axios";
+import { Vue } from "vue-property-decorator";
+import Chart from "./chart.vue";
 
-export default {
-  props: ["issues"],
+export default Vue.extend({
+  components: {
+    "world-bar-chart-svg": Chart
+  },
   data() {
     return {
-      chart: null
+      issues: [],
+      repository: "",
+      startDate: null,
+      loading: false,
+      errored: false
     };
   },
-  watch: {
-    issues(val) {
-      if (this.chart != null) this.chart.remove();
-      this.renderChart(val);
-    }
-  },
   methods: {
-    renderChart(issuesVal) {
-      const margin = 60;
-      const svgWidth = 1000;
-      const svgHeight = 600;
-      const chartWidth = 1000 - 2 * margin;
-      const chartHeight = 600 - 2 * margin;
+    getDateRange() {
+      const startDate = moment().subtract(10, "days");
+      const endDate = moment();
+      const dates = [];
 
-      const svg = d3
-        .select("svg.arr")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
-      this.chart = svg
-        .append("g")
-        .attr("transform", `translate(${margin}, ${margin})`);
-      const yScale = d3
-        .scaleLinear()
-        .range([chartHeight, 0])
-        .domain([0, _.maxBy(issuesVal, "issues").issues]);
-      this.chart
-        .append("g")
-        .call(d3.axisLeft(yScale).ticks(_.maxBy(issuesVal, "issues").issues));
-      const xScale = d3
-        .scaleBand()
-        .range([0, chartWidth])
-        .domain(issuesVal.map(s => s.day))
-        .padding(0.1);
-      this.chart
-        .append("g")
-        .attr("transform", `translate(0, ${chartHeight})`)
-        .call(d3.axisBottom(xScale));
-
-      const barGroups = this.chart
-        .selectAll("rect")
-        .data(issuesVal)
-        .enter();
-
-      barGroups
-        .append("rect")
-        .attr("class", "bar")
-        .attr("x", g => xScale(g.day))
-        .attr("y", g => yScale(g.issues))
-        .attr("height", g => chartHeight - yScale(g.issues))
-        .attr("width", xScale.bandwidth())
-        .attr("width", xScale.bandwidth())
-        .on("mouseenter", function(actual, i) {
-          d3.select(this)
-            .transition()
-            .duration(300)
-            .attr("opacity", 0.6)
-            .attr("x", a => xScale(a.day) - 5)
-            .attr("width", xScale.bandwidth() + 10);
-          barGroups
-            .append("text")
-            .attr("opacity", 0)
-            .attr("class", "value")
-            .attr("pointer-events", "none")
-            .attr("x", a => xScale(a.day) + xScale.bandwidth() / 2)
-            .attr("y", a => yScale(a.issues) + 25)
-            .attr("text-anchor", "middle")
-            .text((a, idx) => (idx !== i.index ? "" : `${a.issues} issues`))
-            .transition()
-            .duration(450)
-            .attr("opacity", 0.8);
-        })
-        .on("mouseleave", function() {
-          d3.selectAll(".issues").attr("opacity", 1);
-          d3.select(this)
-            .transition()
-            .duration(300)
-            .attr("opacity", 1)
-            .attr("x", a => xScale(a.day))
-            .attr("width", xScale.bandwidth());
-          svg.selectAll(".value").remove();
+      while (startDate.isSameOrBefore(endDate)) {
+        dates.push({
+          day: startDate.format("MMM Do YY"),
+          issues: 0
         });
+        startDate.add(1, "days");
+      }
+      return dates;
+    },
 
-      svg
-        .append("text")
-        .attr("class", "label")
-        .attr("x", -(chartHeight / 2) - margin)
-        .attr("y", margin / 2.4)
-        .attr("transform", "rotate(-90)")
-        .attr("text-anchor", "middle")
-        .text("Issues opened");
+    getIssues() {
+      this.errored = false;
+      this.loading = true;
+      this.startDate = moment()
+        .subtract(10, "days")
+        .format("YYYY-MM-DD");
 
-      svg
-        .append("text")
-        .attr("class", "label")
-        .attr("x", chartWidth / 2 + margin)
-        .attr("y", chartHeight + margin * 1.7)
-        .attr("text-anchor", "middle")
-        .text("Days");
+      axios
+        .get(
+          `https://api.github.com/search/issues?q=repo:${this.repository}+is:issue+is:open+created:>=${this.startDate}`,
+          { params: { perPage: 100 } }
+        )
+        .then(response => {
+          const payload = this.getDateRange();
 
-      svg
-        .append("text")
-        .attr("class", "title")
-        .attr("x", chartWidth / 2 + margin)
-        .attr("y", 40)
-        .attr("text-anchor", "middle")
-        .text("Issues in the past 1 week");
+          response.data.items.forEach(item => {
+            const key = moment(item.created_at).format("MMM Do YY");
+            const obj = payload.filter(o => o.day === key)[0];
+            obj.issues += 1;
+          });
+
+          this.issues = payload.map((item, index) => ({ ...item, index }));
+        })
+        .catch(error => {
+          console.error(error);
+          this.errored = true;
+        })
+        .finally(() => (this.loading = false));
     }
   }
-};
+});
 </script>
+
+<style lang="sass">
+.bar
+  fill: #319bbe
+</style>

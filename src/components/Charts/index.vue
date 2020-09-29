@@ -1,19 +1,28 @@
 <template>
-  <div>
-    <form action="#" @submit.prevent="getIssues">
-      <div class="form-group">
-        <input
-          type="text"
-          placeholder="owner/repo Name"
-          v-model="repository"
-          class="col-md-2 col-md-offset-5"
-        />
-      </div>
-    </form>
-    <div class="alert alert-info" v-show="loading">Loading...</div>
-    <div class="alert alert-danger" v-show="errored">An error occured</div>
-    <world-bar-chart :issues="issues" />
-  </div>
+  <v-card elevation="4" class="mt20">
+    <v-toolbar dark flat color="blue">
+      <v-toolbar-title>Графики и анимации</v-toolbar-title>
+      <template v-slot:extension>
+        <v-tabs v-model="tab" align-with-title>
+          <v-tabs-slider color="yellow"></v-tabs-slider>
+          <v-tab v-for="item in items" :key="item.component">
+            {{ item.title }}
+          </v-tab>
+        </v-tabs>
+      </template>
+    </v-toolbar>
+
+    <v-card-text>
+      <v-tabs-items v-model="tab">
+        <v-tab-item>
+          <world-bar-chart />
+        </v-tab-item>
+        <v-tab-item>
+          <world-hexagonal />
+        </v-tab-item>
+      </v-tabs-items>
+    </v-card-text>
+  </v-card>
 </template>
 
 <script>
@@ -21,70 +30,31 @@ import * as moment from "moment";
 import * as axios from "axios";
 import { Vue } from "vue-property-decorator";
 import BarChart from "./components/BarChart/index.vue";
+import Hexagonal from "./components/Hexagonal/index.vue";
+
+const BAR_CHART_COMPONENT = "world-bar-chart";
+const HEXAGONAL_COMPONENT = "world-hexagonal";
 
 export default Vue.extend({
   components: {
-    "world-bar-chart": BarChart
+    [BAR_CHART_COMPONENT]: BarChart,
+    [HEXAGONAL_COMPONENT]: Hexagonal
   },
   data() {
     return {
-      issues: [],
-      repository: "",
-      startDate: null,
-      loading: false,
-      errored: false
+      tab: null,
+      items: [
+        { title: "Вопросы", component: BAR_CHART_COMPONENT },
+        { title: "Ответы", component: HEXAGONAL_COMPONENT }
+      ],
+      BAR_CHART_COMPONENT,
+      HEXAGONAL_COMPONENT
     };
-  },
-  methods: {
-    getDateRange() {
-      const startDate = moment().subtract(10, "days");
-      const endDate = moment();
-      const dates = [];
-
-      while (startDate.isSameOrBefore(endDate)) {
-        dates.push({
-          day: startDate.format("MMM Do YY"),
-          issues: 0
-        });
-        startDate.add(1, "days");
-      }
-      return dates;
-    },
-
-    getIssues() {
-      this.errored = false;
-      this.loading = true;
-      this.startDate = moment()
-        .subtract(10, "days")
-        .format("YYYY-MM-DD");
-
-      axios
-        .get(
-          `https://api.github.com/search/issues?q=repo:${this.repository}+is:issue+is:open+created:>=${this.startDate}`,
-          { params: { perPage: 100 } }
-        )
-        .then(response => {
-          const payload = this.getDateRange();
-
-          response.data.items.forEach(item => {
-            const key = moment(item.created_at).format("MMM Do YY");
-            const obj = payload.filter(o => o.day === key)[0];
-            obj.issues += 1;
-          });
-
-          this.issues = payload.map((item, index) => ({ ...item, index }));
-        })
-        .catch(error => {
-          console.error(error);
-          this.errored = true;
-        })
-        .finally(() => (this.loading = false));
-    }
   }
 });
 </script>
 
 <style lang="sass">
-.bar
-  fill: #319bbe
+.mt20
+  margin-top: 20px
 </style>
